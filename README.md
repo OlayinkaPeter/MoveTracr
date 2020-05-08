@@ -14,6 +14,7 @@ Tracr allows users to keep track of their device movement.
 <p align="start">
 <img src="https://github.com/OlayinkaPeter/MoveTracr/blob/master/screenshots/tracr_app_four.jpg" width="30%">
 <img src="https://github.com/OlayinkaPeter/MoveTracr/blob/master/screenshots/tracr_app_five.jpg" width="30%">
+<img src="https://github.com/OlayinkaPeter/MoveTracr/blob/master/screenshots/tracr_app_six.jpg" width="30%">
 </p>
 
 

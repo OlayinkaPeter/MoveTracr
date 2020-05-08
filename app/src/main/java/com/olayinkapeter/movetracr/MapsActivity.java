@@ -3,14 +3,17 @@ package com.olayinkapeter.movetracr;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.location.Location;
 import android.support.v4.app.ActivityCompat;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,9 +33,12 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.olayinkapeter.movetracr.Room.DatabaseClient;
 import com.olayinkapeter.movetracr.Room.Track;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -60,6 +66,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     Button btnStop;
 
     private String latlngString, startPoint, finishPoint;
+    private LatLng startLatLng, finishLatLng;
     Boolean tracking = false;
     String trackerState = "start";
 
@@ -221,21 +228,28 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 markerOptions.position(latLng);
                 markerOptions.title("Start Position");
                 markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+                startLatLng = latLng;
                 startPoint = latLng.toString();
                 mCurrLocationMarker = mMap.addMarker(markerOptions);
 
             }
 
-            if (trackerState.equals("finish")) {
+            if (trackerState.equals("finish") && btnStart.getText().equals("Tracking...")) {
                 markerOptions.position(latLng);
                 markerOptions.title("Finish Position");
                 markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+                finishLatLng = latLng;
                 finishPoint = latLng.toString();
                 mCurrLocationMarker = mMap.addMarker(markerOptions);
                 saveTrack(startPoint, finishPoint);
 
                 btnStart.setText("Start Tracking");
                 btnStart.setBackground(getResources().getDrawable(R.drawable.bg_btn_accent));
+
+                mMap.addPolyline(new PolylineOptions()
+                        .add(startLatLng, finishLatLng)
+                        .width(5)
+                        .color(Color.RED));
             }
 
             tracking = true;
@@ -348,6 +362,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             protected void onPostExecute(Void aVoid) {
                 super.onPostExecute(aVoid);
                 Toast.makeText(getApplicationContext(), "Saved", Toast.LENGTH_LONG).show();
+
+                String distanceStr = String.valueOf(CalculationByDistance(startLatLng, finishLatLng));
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+                builder.setMessage(distanceStr + " cm")
+                        .setTitle("Calculated distance")
+                        .setPositiveButton(android.R.string.ok, null);
+                AlertDialog dialog = builder.create();
+                dialog.show();
             }
         }
 
@@ -355,6 +378,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         saveTrack.execute();
     }
 
+    public double CalculationByDistance(LatLng StartP, LatLng EndP) {
+        int Radius = 6371;// radius of earth in Km
+        double lat1 = StartP.latitude;
+        double lat2 = EndP.latitude;
+        double lon1 = StartP.longitude;
+        double lon2 = EndP.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        double valueResult = Radius * c;
+        double km = valueResult / 1;
+        DecimalFormat newFormat = new DecimalFormat("####");
+        int kmInDec = Integer.valueOf(newFormat.format(km));
+        double meter = valueResult % 1000;
+        int meterInDec = Integer.valueOf(newFormat.format(meter));
+        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
+                + " Meter   " + meterInDec);
+
+        return Radius * c;
+    }
 
 
     @Override
